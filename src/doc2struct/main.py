@@ -285,8 +285,7 @@ def main(file_path):
     print("\nSaved files: structured_dataset.jsonl, pivots.json, train.csv, dataset_card.md, band_sizes.png")
 
 
-def run_cli():
-    fire.Fire(main)
 
 if __name__ == "__main__":
-    run_cli
+    fire.Fire(main)
+    
