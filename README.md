@@ -11,3 +11,8 @@ example
 ```sh
 doc2struct --file-path=<file_path>
 ```
+
+Format
+- txt
+- pdf
+- docx

@@ -11,6 +11,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from docx import Document
+from pypdf import PdfReader
+
 import faiss
 from sentence_transformers import SentenceTransformer
 
@@ -31,6 +33,31 @@ def read_docx_to_paragraphs(fp: str) -> List[str]:
     paras = [p.text.strip() for p in doc.paragraphs if p.text and p.text.strip()]
     return paras
 
+def read_txt_to_paragraphs(fp: str) -> List[str]:
+    with open(fp, mode='r', encoding='utf-8') as txtfile:
+        paras = txtfile.read().split('\n\n')
+    return [para.strip() for para in paras if para and para.strip()]
+
+def read_pdf_to_paragraphs(fp: str) -> List[str]:
+    reader = PdfReader(fp)
+    text = ''
+    for n in range(len(reader.pages)):
+        page = reader.pages[n]
+        text += page.extract_text()
+    paras = text.split('\n\n')
+    return [para.strip() for para in paras if para and para.strip()]
+
+def read_file(fp):
+    _, ext = os.path.splitext(os.path.basename(fp))
+    print(f"File Extension: {ext}")
+    if ext == '.docx':
+        return read_docx_to_paragraphs(fp)
+    elif ext == '.pdf':
+        return read_pdf_to_paragraphs(fp)
+    elif ext == '.txt':
+        return read_txt_to_paragraphs(fp)
+    return None
+        
 def split_into_sentences(text: str) -> List[str]:
     # Lightweight sentence splitter (regex). Good enough for prototype.
     sents = re.split(r'(?<=[\.!\?])\s+(?=[A-Z0-9(\"\'])', text.strip())
@@ -144,7 +171,7 @@ def minmax_norm(x: np.ndarray) -> np.ndarray:
     return (x - lo) / (hi - lo)
 
 # ======= Main Pipeline =======
-def main(file_path):
+def process_file(file_path):
     # --- Upload .docx (Colab) or read local file variable DOCX_PATH
     filename = os.path.basename(file_path)
     print(f"Processing {filename}")
@@ -154,7 +181,7 @@ def main(file_path):
         raise RuntimeError("Set DOCX_PATH env var to a .docx file path when not in Colab.")
 
     # --- Parse and chunk
-    paragraphs = read_docx_to_paragraphs(file_path)
+    paragraphs = read_file(file_path)
     if not paragraphs:
         raise RuntimeError("No paragraphs found. Is the .docx valid/non‑empty?")
     chunks = make_chunks(paragraphs, TARGET_CH_LEN, OVERLAP_CH)
@@ -284,8 +311,9 @@ def main(file_path):
     print(disp[["id","pivot_local_index","band","energy"]].to_string(index=False))
     print("\nSaved files: structured_dataset.jsonl, pivots.json, train.csv, dataset_card.md, band_sizes.png")
 
-
+def run_cli():
+    fire.Fire(process_file)
 
 if __name__ == "__main__":
-    fire.Fire(main)
+    run_cli
     
